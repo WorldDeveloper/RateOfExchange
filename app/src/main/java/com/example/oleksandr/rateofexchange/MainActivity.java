@@ -11,7 +11,12 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.*;
 
-import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.charts.*;
+import com.github.mikephil.charting.components.*;
+import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.data.LineData;
+import com.github.mikephil.charting.data.LineDataSet;
+import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -21,7 +26,11 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.DateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -47,16 +56,22 @@ public class MainActivity extends AppCompatActivity {
 
         tvOutput = (TextView) findViewById(R.id.tvOutput);
         Calendar c = Calendar.getInstance();
-        tvOutput.setText(c.getTime().toString());
+        tvOutput.setText("Last updated: " + DateFormat.getDateTimeInstance().format(c.getTime()));
 
         btnStart = (Button) findViewById(R.id.btnStart);
         btnStart.setOnClickListener(new View.OnClickListener() {
                                         @Override
                                         public void onClick(View v) {
-                                            DownloadData data=new DownloadData();
-                                            data.execute(dataSource);
+                                            // DownloadData data=new DownloadData();
+                                            // data.execute(dataSource);
 
+                                            List<DataPoint> testData=new ArrayList<>();
+                                            testData.add(new DataPoint(0, 100.0f, "2000"));
+                                            testData.add(new DataPoint(1, 110.0f, "2001"));
+                                            testData.add(new DataPoint(2, 120.0f, "2002"));
+                                            testData.add(new DataPoint(3,110.0f, "2003"));
 
+                                            setGraphData(testData);
                                         }
                                     }
         );
@@ -86,6 +101,64 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    private class DataPoint{
+        private int mId;
+        private float mValue;
+        private String mLabel;
+        public DataPoint(int id, float value, String label){
+            mId=id;
+            mValue=value;
+            mLabel=label;
+        }
+
+        public int getId(){
+            return mId;
+        }
+        public float getValue(){
+            return mValue;
+        }
+        public String getLabel(){
+            return mLabel;
+        }
+    }
+
+    private void setGraphData(List<DataPoint> realData){
+        LineChart lineChart = (LineChart) findViewById(R.id.chart);
+
+        ArrayList<Entry> realValues = new ArrayList<Entry>();
+        ArrayList<Entry> predictedValues = new ArrayList<Entry>();
+
+        for(DataPoint element:realData){
+            realValues.add(new Entry(element.getValue(), element.getId()));
+        }
+
+
+        Entry c2e1 = new Entry(120.000f, 0); // 0 == quarter 1
+        predictedValues.add(c2e1);
+        Entry c2e2 = new Entry(110.000f, 1); // 1 == quarter 2 ...
+        predictedValues.add(c2e2);
+        //...
+
+        LineDataSet realSet = new LineDataSet(realValues, "Real");
+        realSet.setAxisDependency(YAxis.AxisDependency.LEFT);
+        LineDataSet predictedSet = new LineDataSet(predictedValues, "Predicted");
+        predictedSet.setAxisDependency(YAxis.AxisDependency.LEFT);
+
+
+        ArrayList<ILineDataSet> dataSets = new ArrayList<ILineDataSet>();
+        dataSets.add(realSet);
+        dataSets.add(predictedSet);
+
+        ArrayList<String> xVals = new ArrayList<String>();
+        xVals.add("1.Q"); xVals.add("2.Q"); xVals.add("3.Q"); xVals.add("4.Q");
+
+        LineData data = new LineData(xVals, dataSets);
+        lineChart.setData(data);
+        lineChart.invalidate(); // refresh
+
+    }
+
+
     private void copyInputStreamToFile(InputStream in, File file) {
         try {
             OutputStream out = new FileOutputStream(file);
@@ -99,7 +172,6 @@ public class MainActivity extends AppCompatActivity {
             Log.d("RateOfExchange", "Error while saving file: "+e.getMessage());
         }
     }
-
 
     private class DownloadData extends AsyncTask<String, Void, String>
     {
