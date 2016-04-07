@@ -1,6 +1,7 @@
 package com.example.oleksandr.rateofexchange;
 
 import android.app.ProgressDialog;
+import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
@@ -86,7 +87,12 @@ public class MainActivity extends AppCompatActivity {
         btnStart.setOnClickListener(new View.OnClickListener() {
                                         @Override
                                         public void onClick(View v) {
-                                            new DownloadXML().execute(dataSource);
+                                            try {
+                                                new DownloadXML().execute(dataSource);
+                                            }catch (Exception e)
+                                            {
+                                                Log.d("RateOfExchange", e.getMessage());
+                                            }
 
                                             // DownloadData data=new DownloadData();
                                             // data.execute(dataSource);
@@ -158,22 +164,40 @@ public class MainActivity extends AppCompatActivity {
         ArrayList<Entry> predictedValues = new ArrayList<Entry>();
         ArrayList<String> xVals = new ArrayList<String>();
 
+        ArrayList<Float> yVals=new ArrayList<>();
+        for(DataPoint point:realData){
+            yVals.add(point.getValue());
+        }
+        LinearRegression linearRegression=new LinearRegression(yVals);
+
         for (DataPoint element : realData) {
             realValues.add(new Entry(element.getValue(), element.getId()));
+            //predictedValues.add(new Entry((float)(x*linearRegression.getBeta1()+linearRegression.getBeta0()), x));
             xVals.add(element.getLabel());
         }
 
+        predictedValues.add(new Entry((float)(linearRegression.getBeta0()), 0));//start point
 
-        Entry c2e1 = new Entry(2220.000f, 0); // 0 == quarter 1
-        predictedValues.add(c2e1);
-        Entry c2e2 = new Entry(2000.000f, 1); // 1 == quarter 2 ...
-        predictedValues.add(c2e2);
-        //...
+        int x=realValues.size()-1;
+        for(int i=1; i<31; i++) {
+            xVals.add(i + " days");
+            predictedValues.add(new Entry((float)((x+i)*linearRegression.getBeta1()+linearRegression.getBeta0()), (x+i)));
+        }
+
+
+       // predictedValues.add(new Entry((float)((x+2)*linearRegression.getBeta1()+linearRegression.getBeta0()), (x+2)));//tomorrow
+       // predictedValues.add(new Entry((float)((x+30)*linearRegression.getBeta1()+linearRegression.getBeta0()), (x+30)));//next month
+
 
         LineDataSet realSet = new LineDataSet(realValues, "Real");
         realSet.setAxisDependency(YAxis.AxisDependency.LEFT);
+        realSet.setDrawValues(false);
+
         LineDataSet predictedSet = new LineDataSet(predictedValues, "Predicted");
         predictedSet.setAxisDependency(YAxis.AxisDependency.LEFT);
+        predictedSet.setColors(new int[]{Color.RED});
+        predictedSet.setDrawValues(false);
+        predictedSet.setCircleColor(Color.RED);
 
 
         ArrayList<ILineDataSet> dataSets = new ArrayList<ILineDataSet>();
@@ -182,6 +206,7 @@ public class MainActivity extends AppCompatActivity {
 
         LineData data = new LineData(xVals, dataSets);
         lineChart.setData(data);
+        lineChart.setDescription("UAH per 100 USD");
         lineChart.invalidate(); // refresh
 
     }
