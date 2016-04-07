@@ -1,10 +1,10 @@
 package com.example.oleksandr.rateofexchange;
 
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -25,20 +25,18 @@ import org.xml.sax.InputSource;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
-
-import java.net.URL;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -46,22 +44,18 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
 
-import android.app.Activity;
-import android.app.ProgressDialog;
-import android.os.AsyncTask;
-import android.os.Bundle;
-import android.util.Log;
 import android.widget.TextView;
 
 
 public class MainActivity extends AppCompatActivity {
 
-    private final String dataSource = "http://www.bank.gov.ua/control/uk/curmetal/currency/search?formType=searchPeriodForm&time_step=daily&currency=169&periodStartTime=01.03.2016&periodEndTime=30.03.2016&outer=xml";
+    private String dataSource;
     private TextView tvOutput;
-    private Button btnStart;
+    private Button btnUpdate;
+    private String mTimePeriod;
+    private String mCurrency;
+    private String mNumberOfUnits;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,32 +64,34 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-       /* FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });*/
-
         tvOutput = (TextView) findViewById(R.id.tvOutput);
         Calendar c = Calendar.getInstance();
         tvOutput.setText("Last updated: " + DateFormat.getDateTimeInstance().format(c.getTime()));
 
-        btnStart = (Button) findViewById(R.id.btnStart);
-        btnStart.setOnClickListener(new View.OnClickListener() {
-                                        @Override
-                                        public void onClick(View v) {
-                                            try {
-                                                new DownloadXML().execute(dataSource);
-                                            }catch (Exception e)
-                                            {
-                                                Log.d("RateOfExchange", e.getMessage());
-                                            }
+        mTimePeriod=getIntent().getStringExtra("timePeriod");
+        if(mTimePeriod==null)
+            mTimePeriod="";
 
-                                            // DownloadData data=new DownloadData();
-                                            // data.execute(dataSource);
+        mCurrency=getIntent().getStringExtra("currency");
+        if(mCurrency==null)
+            mCurrency="";
+
+        btnUpdate = (Button) findViewById(R.id.btnUpdate);
+        btnUpdate.setOnClickListener(new View.OnClickListener() {
+                                         @Override
+                                         public void onClick(View v) {
+                                             try {
+                                                 SimpleDateFormat sdf=new SimpleDateFormat("dd.MM.yyy", Locale.UK);
+                                                 Calendar c= Calendar.getInstance();
+                                                 String endDate=sdf.format(c.getTime());
+                                                 dataSource=String.format("http://www.bank.gov.ua/control/uk/curmetal/currency/search?formType=searchPeriodForm&time_step=daily&currency=%1s&periodStartTime=%2s&periodEndTime=%3s&outer=xml", getCurrencyCode(mCurrency), getStartDate(mTimePeriod), endDate);
+                                                 new DownloadXML().execute(dataSource);
+                                             } catch (Exception e) {
+                                                 Log.d("RateOfExchange", e.getMessage());
+                                             }
+
+                                             // DownloadData data=new DownloadData();
+                                             // data.execute(dataSource);
 
 //                                            List<DataPoint> testData=new ArrayList<>();
 //                                            testData.add(new DataPoint(0, 100.0f, "2000"));
@@ -104,8 +100,24 @@ public class MainActivity extends AppCompatActivity {
 //                                            testData.add(new DataPoint(3,110.0f, "2003"));
 //
 //                                            setGraphData(testData);
-                                        }
-                                    }
+                                         }
+                                     }
+        );
+        Button btnConfigure = (Button) findViewById(R.id.btnConfigure);
+        btnConfigure.setOnClickListener(new View.OnClickListener() {
+                                         @Override
+                                         public void onClick(View v) {
+                                             try {
+                                                 Intent intent = new Intent(getApplicationContext(), ConfigurationActivity.class);
+
+                                                 intent.putExtra("timePeriod",mTimePeriod);
+                                                 intent.putExtra("currency", mCurrency);
+                                                 startActivity(intent);
+                                             }catch(Exception e)
+                                             {}
+
+                                         }
+                                     }
         );
 
 
@@ -131,6 +143,37 @@ public class MainActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private String getCurrencyCode(String code){
+        switch(code){
+            case "EUR":
+               return "196";
+            case "GBP":
+                return "163";
+            case "JPY":
+                return "78";
+            case "CNY":
+                return "34";
+            case "RUB":
+                return "209";
+            default://USD
+                mCurrency="USD";
+                return "169";
+        }
+    }
+
+    private String getStartDate(String timePeriod){
+        switch(timePeriod){
+            case "Half year":
+                return "01.01.2016";
+            case "Year":
+                return "01.03.2015";
+            case "From 1996":
+                return "02.09.1996";
+            default://Month
+                return "01.03.2016";
+        }
     }
 
     private class DataPoint {
@@ -192,12 +235,14 @@ public class MainActivity extends AppCompatActivity {
         LineDataSet realSet = new LineDataSet(realValues, "Real");
         realSet.setAxisDependency(YAxis.AxisDependency.LEFT);
         realSet.setDrawValues(false);
+        realSet.setCircleRadius(0.5f);
 
         LineDataSet predictedSet = new LineDataSet(predictedValues, "Predicted");
         predictedSet.setAxisDependency(YAxis.AxisDependency.LEFT);
         predictedSet.setColors(new int[]{Color.RED});
         predictedSet.setDrawValues(false);
         predictedSet.setCircleColor(Color.RED);
+        predictedSet.setCircleRadius(1.0f);
 
 
         ArrayList<ILineDataSet> dataSets = new ArrayList<ILineDataSet>();
@@ -206,7 +251,7 @@ public class MainActivity extends AppCompatActivity {
 
         LineData data = new LineData(xVals, dataSets);
         lineChart.setData(data);
-        lineChart.setDescription("UAH per 100 USD");
+        lineChart.setDescription(String.format("UAH per %1s %2s", mNumberOfUnits, mCurrency));
         lineChart.invalidate(); // refresh
 
     }
@@ -292,7 +337,7 @@ public class MainActivity extends AppCompatActivity {
             pDialog.setMessage("Loading...");
             pDialog.setIndeterminate(false);
             // Show progressbar
-            //pDialog.show();
+            pDialog.show();
         }
 
         @Override
@@ -332,15 +377,21 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
 
+            Node nNode = nodelist.item(0);
+            if (nNode.getNodeType() == Node.ELEMENT_NODE) {
+                Element eElement = (Element) nNode;
+                mNumberOfUnits=getNode("number_of_units", eElement);
+            }
+
             Log.d("RateOfExchange", "chart points count: "+testData.size());
             if(testData.size()>3)
                 setGraphData(testData);
             else{
-                Toast toast=Toast.makeText(MainActivity.this, "It is not enought data", Toast.LENGTH_LONG );
+                Toast toast=Toast.makeText(MainActivity.this, "It is not enough data", Toast.LENGTH_LONG );
                 toast.show();
             }
             // Close progressbar
-           // pDialog.dismiss();
+            pDialog.dismiss();
         }
     }
 
