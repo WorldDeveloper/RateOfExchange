@@ -52,6 +52,7 @@ public class MainActivity extends AppCompatActivity {
 
     private String dataSource;
     private TextView tvOutput;
+    private TextView tvForecast;
     private Button btnUpdate;
     private String mTimePeriod;
     private String mCurrency;
@@ -65,8 +66,7 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         tvOutput = (TextView) findViewById(R.id.tvOutput);
-        Calendar c = Calendar.getInstance();
-        tvOutput.setText("Last updated: " + DateFormat.getDateTimeInstance().format(c.getTime()));
+        tvForecast=(TextView)findViewById(R.id.tvForecast);
 
         mTimePeriod=getIntent().getStringExtra("timePeriod");
         if(mTimePeriod==null)
@@ -81,6 +81,9 @@ public class MainActivity extends AppCompatActivity {
                                          @Override
                                          public void onClick(View v) {
                                              try {
+                                                 tvOutput.setText("Status: updating...");
+                                                 tvForecast.setText("");
+
                                                  SimpleDateFormat sdf=new SimpleDateFormat("dd.MM.yyy", Locale.UK);
                                                  Calendar c= Calendar.getInstance();
                                                  String endDate=sdf.format(c.getTime());
@@ -89,17 +92,6 @@ public class MainActivity extends AppCompatActivity {
                                              } catch (Exception e) {
                                                  Log.d("RateOfExchange", e.getMessage());
                                              }
-
-                                             // DownloadData data=new DownloadData();
-                                             // data.execute(dataSource);
-
-//                                            List<DataPoint> testData=new ArrayList<>();
-//                                            testData.add(new DataPoint(0, 100.0f, "2000"));
-//                                            testData.add(new DataPoint(1, 110.0f, "2001"));
-//                                            testData.add(new DataPoint(2, 120.0f, "2002"));
-//                                            testData.add(new DataPoint(3,110.0f, "2003"));
-//
-//                                            setGraphData(testData);
                                          }
                                      }
         );
@@ -163,16 +155,26 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private String formatDate(Calendar date){
+        SimpleDateFormat sdf=new SimpleDateFormat("dd.MM.yyy", Locale.UK);
+        return sdf.format(date.getTime());
+    }
+
     private String getStartDate(String timePeriod){
+        Calendar date= Calendar.getInstance();
+
         switch(timePeriod){
             case "Half year":
-                return "01.01.2016";
+                date.add(Calendar.DAY_OF_MONTH, -365/2);
+                return formatDate(date);
             case "Year":
-                return "01.03.2015";
+                date.add(Calendar.DAY_OF_MONTH, -365);
+                return formatDate(date);
             case "From 1996":
                 return "02.09.1996";
             default://Month
-                return "01.03.2016";
+                date.add(Calendar.DAY_OF_MONTH, -31);
+                return formatDate(date);
         }
     }
 
@@ -215,22 +217,19 @@ public class MainActivity extends AppCompatActivity {
 
         for (DataPoint element : realData) {
             realValues.add(new Entry(element.getValue(), element.getId()));
-            //predictedValues.add(new Entry((float)(x*linearRegression.getBeta1()+linearRegression.getBeta0()), x));
             xVals.add(element.getLabel());
         }
 
         predictedValues.add(new Entry((float)(linearRegression.getBeta0()), 0));//start point
 
         int x=realValues.size()-1;
+        predictedValues.add(new Entry((float)((x+1)*linearRegression.getBeta1()+linearRegression.getBeta0()), (x+1)));
+        float forecastOnNextMonth=(float)((x+30)*linearRegression.getBeta1()+linearRegression.getBeta0());
+        predictedValues.add(new Entry(forecastOnNextMonth, (x+30)));
+        tvForecast.setText(String.format("Forecast on next month: %.2f%s   Model quality: %.2f%%", forecastOnNextMonth, mCurrency, linearRegression.getR2()*100));
         for(int i=1; i<31; i++) {
             xVals.add(i + " days");
-            predictedValues.add(new Entry((float)((x+i)*linearRegression.getBeta1()+linearRegression.getBeta0()), (x+i)));
         }
-
-
-       // predictedValues.add(new Entry((float)((x+2)*linearRegression.getBeta1()+linearRegression.getBeta0()), (x+2)));//tomorrow
-       // predictedValues.add(new Entry((float)((x+30)*linearRegression.getBeta1()+linearRegression.getBeta0()), (x+30)));//next month
-
 
         LineDataSet realSet = new LineDataSet(realValues, "Real");
         realSet.setAxisDependency(YAxis.AxisDependency.LEFT);
@@ -240,7 +239,7 @@ public class MainActivity extends AppCompatActivity {
         LineDataSet predictedSet = new LineDataSet(predictedValues, "Predicted");
         predictedSet.setAxisDependency(YAxis.AxisDependency.LEFT);
         predictedSet.setColors(new int[]{Color.RED});
-        predictedSet.setDrawValues(false);
+        //predictedSet.setDrawValues(false);
         predictedSet.setCircleColor(Color.RED);
         predictedSet.setCircleRadius(1.0f);
 
@@ -392,6 +391,9 @@ public class MainActivity extends AppCompatActivity {
             }
             // Close progressbar
             pDialog.dismiss();
+
+            Calendar c = Calendar.getInstance();
+            tvOutput.setText("Last updated: " + DateFormat.getDateTimeInstance().format(c.getTime()));
         }
     }
 
