@@ -53,7 +53,6 @@ public class MainActivity extends AppCompatActivity {
     private String dataSource;
     private TextView tvOutput;
     private TextView tvForecast;
-    private Button btnUpdate;
     private String mTimePeriod;
     private String mCurrency;
     private String mNumberOfUnits;
@@ -76,43 +75,7 @@ public class MainActivity extends AppCompatActivity {
         if(mCurrency==null)
             mCurrency="";
 
-        btnUpdate = (Button) findViewById(R.id.btnUpdate);
-        btnUpdate.setOnClickListener(new View.OnClickListener() {
-                                         @Override
-                                         public void onClick(View v) {
-                                             try {
-                                                 tvOutput.setText("Status: updating...");
-                                                 tvForecast.setText("");
-
-                                                 SimpleDateFormat sdf=new SimpleDateFormat("dd.MM.yyy", Locale.UK);
-                                                 Calendar c= Calendar.getInstance();
-                                                 String endDate=sdf.format(c.getTime());
-                                                 dataSource=String.format("http://www.bank.gov.ua/control/uk/curmetal/currency/search?formType=searchPeriodForm&time_step=daily&currency=%1s&periodStartTime=%2s&periodEndTime=%3s&outer=xml", getCurrencyCode(mCurrency), getStartDate(mTimePeriod), endDate);
-                                                 new DownloadXML().execute(dataSource);
-                                             } catch (Exception e) {
-                                                 Log.d("RateOfExchange", e.getMessage());
-                                             }
-                                         }
-                                     }
-        );
-        Button btnConfigure = (Button) findViewById(R.id.btnConfigure);
-        btnConfigure.setOnClickListener(new View.OnClickListener() {
-                                         @Override
-                                         public void onClick(View v) {
-                                             try {
-                                                 Intent intent = new Intent(getApplicationContext(), ConfigurationActivity.class);
-
-                                                 intent.putExtra("timePeriod",mTimePeriod);
-                                                 intent.putExtra("currency", mCurrency);
-                                                 startActivity(intent);
-                                             }catch(Exception e)
-                                             {}
-
-                                         }
-                                     }
-        );
-
-
+        makeCalculations();
     }
 
     @Override
@@ -131,10 +94,35 @@ public class MainActivity extends AppCompatActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+            try {
+                Intent intent = new Intent(getApplicationContext(), ConfigurationActivity.class);
+
+                intent.putExtra("timePeriod",mTimePeriod);
+                intent.putExtra("currency", mCurrency);
+                startActivity(intent);
+            }catch(Exception e)
+            {}
+
             return true;
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private void makeCalculations(){
+        try {
+            tvOutput.setText("Status: updating...");
+            tvForecast.setText("");
+
+            SimpleDateFormat sdf=new SimpleDateFormat("dd.MM.yyy", Locale.UK);
+            Calendar c= Calendar.getInstance();
+            String endDate=sdf.format(c.getTime());
+            dataSource=String.format("http://www.bank.gov.ua/control/uk/curmetal/currency/search?formType=searchPeriodForm&time_step=daily&currency=%1s&periodStartTime=%2s&periodEndTime=%3s&outer=xml", getCurrencyCode(mCurrency), getStartDate(mTimePeriod), endDate);
+            new DownloadXML().execute(dataSource);
+        } catch (Exception e) {
+            Log.d("RateOfExchange", e.getMessage());
+            tvOutput.setText("Error!");
+        }
     }
 
     private String getCurrencyCode(String code){
@@ -226,7 +214,7 @@ public class MainActivity extends AppCompatActivity {
         predictedValues.add(new Entry((float)((x+1)*linearRegression.getBeta1()+linearRegression.getBeta0()), (x+1)));
         float forecastOnNextMonth=(float)((x+30)*linearRegression.getBeta1()+linearRegression.getBeta0());
         predictedValues.add(new Entry(forecastOnNextMonth, (x+30)));
-        tvForecast.setText(String.format("Forecast on next month: %.2f%s   Model quality: %.2f%%", forecastOnNextMonth, mCurrency, linearRegression.getR2()*100));
+        tvForecast.setText(String.format("Forecast on the next month: %.2f%s\nModel quality: %.2f%%", forecastOnNextMonth, mCurrency, linearRegression.getR2()*100));
         for(int i=1; i<31; i++) {
             xVals.add(i + " days");
         }
