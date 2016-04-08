@@ -105,6 +105,10 @@ public class MainActivity extends AppCompatActivity {
 
             return true;
         }
+        else if(id==R.id.action_update){
+            makeCalculations();
+            return true;
+        }
 
         return super.onOptionsItemSelected(item);
     }
@@ -214,7 +218,7 @@ public class MainActivity extends AppCompatActivity {
         predictedValues.add(new Entry((float)((x+1)*linearRegression.getBeta1()+linearRegression.getBeta0()), (x+1)));
         float forecastOnNextMonth=(float)((x+30)*linearRegression.getBeta1()+linearRegression.getBeta0());
         predictedValues.add(new Entry(forecastOnNextMonth, (x+30)));
-        tvForecast.setText(String.format("Forecast on the next month: %.2f%s\nModel quality: %.2f%%", forecastOnNextMonth, mCurrency, linearRegression.getR2()*100));
+        tvForecast.setText(String.format("Forecast on the next month: %.2f UAH/%s%s\nModel quality: %.2f%%", forecastOnNextMonth,mNumberOfUnits, mCurrency, linearRegression.getR2()*100));
         for(int i=1; i<31; i++) {
             xVals.add(i + " days");
         }
