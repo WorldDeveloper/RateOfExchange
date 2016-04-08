@@ -10,7 +10,6 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.*;
 
 import com.github.mikephil.charting.charts.*;
@@ -23,12 +22,6 @@ import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -37,15 +30,12 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
 
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
-
-import android.widget.TextView;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -56,6 +46,8 @@ public class MainActivity extends AppCompatActivity {
     private String mTimePeriod;
     private String mCurrency;
     private String mNumberOfUnits;
+    NodeList nodelist;
+    ProgressDialog pDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -107,6 +99,13 @@ public class MainActivity extends AppCompatActivity {
         }
         else if(id==R.id.action_update){
             makeCalculations();
+            return true;
+        }
+        else if(id==R.id.action_exit){
+            Intent intent = new Intent(Intent.ACTION_MAIN);
+            intent.addCategory(Intent.CATEGORY_HOME);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
             return true;
         }
 
@@ -184,11 +183,9 @@ public class MainActivity extends AppCompatActivity {
         public int getId() {
             return mId;
         }
-
         public float getValue() {
             return mValue;
         }
-
         public String getLabel() {
             return mLabel;
         }
@@ -218,7 +215,8 @@ public class MainActivity extends AppCompatActivity {
         predictedValues.add(new Entry((float)((x+1)*linearRegression.getBeta1()+linearRegression.getBeta0()), (x+1)));
         float forecastOnNextMonth=(float)((x+30)*linearRegression.getBeta1()+linearRegression.getBeta0());
         predictedValues.add(new Entry(forecastOnNextMonth, (x+30)));
-        tvForecast.setText(String.format("Forecast on the next month: %.2f UAH/%s%s\nModel quality: %.2f%%", forecastOnNextMonth,mNumberOfUnits, mCurrency, linearRegression.getR2()*100));
+        tvForecast.setText(String.format("Forecast on the next month: %.2f UAH/%s%s\nModel quality: %.2f%%",
+                forecastOnNextMonth,mNumberOfUnits, mCurrency, linearRegression.getR2()*100));
         for(int i=1; i<31; i++) {
             xVals.add(i + " days");
         }
@@ -246,73 +244,6 @@ public class MainActivity extends AppCompatActivity {
         lineChart.invalidate(); // refresh
 
     }
-
-
-    private void copyInputStreamToFile(InputStream in, File file) {
-        try {
-            OutputStream out = new FileOutputStream(file);
-            byte[] buf = new byte[1024];
-            int len;
-            while ((len = in.read(buf)) > 0) {
-                out.write(buf, 0, len);
-            }
-            out.close();
-        } catch (Exception e) {
-            Log.d("RateOfExchange", "Error while saving file: " + e.getMessage());
-        }
-    }
-
-    private class DownloadData extends AsyncTask<String, Void, String> {
-        private String mFileContents;
-
-        @Override
-        protected String doInBackground(String... params) {
-            mFileContents = downloadFile(params[0]);
-
-            return mFileContents;
-        }
-
-        protected void onPostExecute(String result) {
-            Log.d("RateOfExchange", "File was downloaded");
-            if (mFileContents != null)
-                tvOutput.setText(mFileContents);
-        }
-
-        private String downloadFile(String urlPath) {
-            StringBuilder tempBuffer = new StringBuilder();
-            try {
-                URL url = new URL(urlPath);
-                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                int response = connection.getResponseCode();
-                Log.d("RateOfExchange", "Response code: " + response);
-                InputStream is = connection.getInputStream();
-
-//                File dataFile=new File(getFilesDir(),"data.xml");
-//                Log.d("RateOfExchange", "Saving xml file");
-//                copyInputStreamToFile(is, dataFile);
-//                Log.d("RateOfExchange", "Xml file saved in: "+dataFile.getPath());
-
-                InputStreamReader isr = new InputStreamReader(is);
-                int charRead;
-                char[] inputBuffer = new char[500];
-                while ((charRead = isr.read(inputBuffer)) > 0) {
-                    tempBuffer.append(String.copyValueOf(inputBuffer, 0, charRead));
-                }
-                isr.close();
-                is.close();
-
-            } catch (Exception e) {
-                Log.d("RateOfExchange", "Error: " + e.getMessage());
-            }
-
-            return tempBuffer.toString();
-        }
-
-    }
-
-
-    NodeList nodelist;
-    ProgressDialog pDialog;
 
     // DownloadXML AsyncTask
     private class DownloadXML extends AsyncTask<String, Void, Void> {
@@ -396,5 +327,4 @@ public class MainActivity extends AppCompatActivity {
         Node nValue = (Node) nlList.item(0);
         return nValue.getNodeValue();
     }
-
 }
