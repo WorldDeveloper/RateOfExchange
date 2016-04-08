@@ -16,7 +16,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textAppearance="?android:attr/textAppearanceMedium"
-        android:text="Medium Text"
+        android:text=""
         android:id="@+id/tvForecast"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true" />
@@ -30,25 +30,11 @@
         android:layout_alignParentStart="true"
         android:text="" />
 
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Update"
-        android:id="@+id/btnUpdate"
-        android:layout_below="@+id/tvOutput"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true" />
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Configure"
-        android:id="@+id/btnConfigure"
-        android:layout_alignTop="@+id/btnUpdate"
-        android:layout_toRightOf="@+id/btnUpdate" />
 
     <com.github.mikephil.charting.charts.LineChart
         android:id="@+id/chart"
-        android:layout_below="@+id/btnUpdate"
+        android:layout_below="@+id/tvOutput"
+        android:layout_marginTop="20dp"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"
         android:layout_alignParentBottom="true"
