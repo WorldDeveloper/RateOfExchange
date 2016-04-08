@@ -52,7 +52,10 @@ public class ConfigurationActivity extends AppCompatActivity {
     }
 
     private void InitializeSettings(){
-        switch(getIntent().getStringExtra("timePeriod"))
+        String timePeriod=getIntent().getStringExtra("timePeriod");
+        if(timePeriod==null)
+            timePeriod="";
+        switch(timePeriod)
         {
            case "Half year":
                 ((RadioButton)findViewById(R.id.rbHalfYear)).setChecked(true);
@@ -68,7 +71,11 @@ public class ConfigurationActivity extends AppCompatActivity {
                 break;
         }
 
-        switch(getIntent().getStringExtra("currency"))
+        String currency=getIntent().getStringExtra("currency");
+        if(currency==null)
+            currency="";
+
+        switch(currency)
         {
             case "EUR":
                 ((RadioButton)findViewById(R.id.rbEUR)).setChecked(true);
