@@ -263,8 +263,9 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
-        protected Void doInBackground(String... Url) {
+        protected Void doInBackground(String... Url)  {
             try {
+                nodelist=null;
                 URL url = new URL(Url[0]);
                 DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
                 DocumentBuilder db = dbf.newDocumentBuilder();
@@ -279,11 +280,20 @@ public class MainActivity extends AppCompatActivity {
                 e.printStackTrace();
             }
             return null;
-
         }
 
         @Override
         protected void onPostExecute(Void args) {
+
+            if(nodelist==null) {
+                tvOutput.setText("Error: can't download data");
+                pDialog.dismiss();
+                return;
+            }else if( nodelist.getLength() < 2) {
+                tvOutput.setText("Error: not enough data");
+                pDialog.dismiss();
+                return;
+            }
 
             List<DataPoint> testData = new ArrayList<>();
             Log.d("RateOfExchange", "Nodes count: "+nodelist.getLength());
@@ -306,17 +316,17 @@ public class MainActivity extends AppCompatActivity {
             }
 
             Log.d("RateOfExchange", "chart points count: "+testData.size());
-            if(testData.size()>3)
-                setGraphData(testData);
-            else{
-                Toast toast=Toast.makeText(MainActivity.this, "It is not enough data", Toast.LENGTH_LONG );
-                toast.show();
-            }
-            // Close progressbar
-            pDialog.dismiss();
 
             Calendar c = Calendar.getInstance();
             tvOutput.setText("Last updated: " + DateFormat.getDateTimeInstance().format(c.getTime()));
+
+            if(testData.size()>3)
+                setGraphData(testData);
+            else{
+                tvOutput.setText("Error: can't build graph");
+            }
+            // Close progressbar
+            pDialog.dismiss();
         }
     }
 
